@@ -1,0 +1,37 @@
+* (TEST 1) QUIZ: QUESTIONS.txt
+COMMENTS:
+This test determines if the answers in QUESTIONS.txt are correct. This
+file must be edited so that the correct ( ) choices are replaced with
+(X) AND no other changes are made to the file. If you are confident in
+your answers but think you may have made inadvertent changes to
+QUESTIONS.txt, you can try restoring it with the provided
+QUESTIONS.txt.bk file.
+
+The correct output for the test should be 
+: -: OK
+
+Note: the md5sum program is used for to verify and must be installed
+to work.
+
+
+** program: bash -v
+
+** --- Failure messages --- 
+- FAILURE: Output Mismatch at lines marked
+
+** --- Side by Side Differences ---
+- Expect output in: test-results/raw/lab01-01-expect.tmp
+- Actual output in: test-results/raw/lab01-01-actual.tmp
+- Differing lines have a character like '|' '>' or '<' in the middle
+#+BEGIN_SRC sbs-diff
+==== EXPECT ====                                                ==== ACTUAL ====                                             
+>> ./test_quiz_filter QUESTIONS.txt | md5sum -c QUESTIONS.md5   >> ./test_quiz_filter QUESTIONS.txt | md5sum -c QUESTIONS.md5
+-: OK                                                         | -: FAILED
+                                                              > md5sum: WARNING: 1 computed checksum did NOT match
+#+END_SRC
+
+** --- Line Differences ---
+EXPECT:   2) -: OK
+ACTUAL:   2) -: FAILED
+ACTUAL:   3) md5sum: WARNING: 1 computed checksum did NOT match
+
