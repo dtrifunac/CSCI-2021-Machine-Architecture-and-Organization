@@ -1,0 +1,295 @@
+                              ____________
+
+                               P4 WRITEUP
+                              ____________
+
+
+- Name: Dimitri Trifunac
+- NetID: (THE trifu001 IN trifu001@umn.edu)
+
+Answer the questions below according to the project specification. Write
+your answers directly in this text file and submit it along with your
+code.
+
+
+PROBLEM 1: matata_OPTM()
+========================
+
+  Do your timing study on csel-atlas.cselabs.umn.edu
+
+
+(A) Paste Source Code
+~~~~~~~~~~~~~~~~~~~~~
+
+  Paste a copy of your source code for the function `matata_OPTM()'
+
+  ####################### YOUR ANSWER HERE #########################
+
+  ##################################################################
+  int matata_VER1(matrix_t mat, matrix_t ans) {
+  int numrows = mat.rows;               //number of rows
+  int numcols = mat.cols;               //number of columns
+  int tik = 0;                          //declare tik and mkj now so they don't need to be redeclared every loop iteration
+  int mkj = 0;
+  int *arr = malloc(sizeof(int)*numcols*numrows);
+  int *orig = malloc(sizeof(int)*numcols*numrows);
+  int counter = 0;
+
+  for(int i = 0; i < numrows; i++){       //loads orig array with values from mat for easy sequential access
+    for(int j =0; j < numcols; j++){
+      orig[counter] = MGET(mat,i,j);    
+      arr[counter] = 0;                   //zero out values in arr
+      counter++;
+    }
+  }
+
+  for(int i=0; i<numcols; i++){           //performs all the multiplication and addition to fill arr with the right values for each cell in output matrix       
+    for(int j=0; j<numrows; j++){
+      for(int k = 0; k<=j;k++){           //only iterates through lower triangular half of the matrix since output matrix is symetrical along diagonal
+        tik = orig[i*numrows+k];
+        mkj = orig[i*numrows+j];
+        arr[j*numrows+k] += tik*mkj;
+      }
+    } 
+  }
+
+  for(int i = 0; i < numrows; i++){       //loads ans with values from arr
+    for(int j =0; j < numcols; j++){
+      int val = arr[i*numrows+j];
+      MSET(ans,i,j,val);
+      MSET(ans,j,i,val);
+    }
+  }
+
+
+(B) Timing on csel-atlas
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Paste a copy of the results of running `matata_benchmark' on
+  csel-atlas.cselabs.umn.edu in the space below which shows how your
+  performance optimizations improved on the baseline codes.
+
+  ####################### YOUR ANSWER HERE #########################
+
+  ##################################################################
+  trifu001@csel-atlas:~/Desktop/CSCI 2021/p4-code$ ./matata_benchmark
+==== Matrix A^T*A Benchmark Version 1 ====
+  SIZE       BASE       OPTM  SPDUP   LOG2 FACTOR POINTS
+   171 3.2234e-02 1.0523e-02   3.06   1.62   1.00   1.62
+   196 4.7587e-02 1.5543e-02   3.06   1.61   1.15   1.85
+   256 1.3754e-01 3.5001e-02   3.93   1.97   1.50   2.96
+   320 2.5150e-01 6.5708e-02   3.83   1.94   1.87   3.62
+   801 4.6920e+00 1.0111e+00   4.64   2.21   4.68  10.37
+  1024 2.3985e+01 2.2259e+00  10.78   3.43   5.99  20.54
+RAW POINTS: 40.96
+
+
+(C) Optimizations
+~~~~~~~~~~~~~~~~~
+
+  Describe in some detail the optimizations you used to speed the code
+  up.  THE CODE SHOULD CONTAIN SOME COMMENTS already to describe these
+  but in the section below, describe in English the techniques you used
+  to make the code run faster.  Format your descriptions into discrete
+  chunks such as.
+        Optimization 1: I optimizted for cache. Since C is row-major orientated, I reordered how my triple
+        for loop iterated through the matrix.
+
+        Optimization 2: I completetly removed creating a transpose matrix. This not only saved time, but also 
+        decreased the memory pressure on the CPU
+
+        Optimization 3: I created two arrays to store the values of the original matrix and one holding the 
+        values of the matrix product. This saved time because the MGET and MSET methods took longer than accessing
+        and changing values in my two arrays. These two afformentioned methods would have to be used multiple times
+        in the inner most loop of the triple nested for loop meaning they would be called many times. Using this methods
+        stricly in double nested for loops to upload and offload values from these arrays meant that the total times 
+        these functions were called was much less.
+
+        Optimization 4: Only iterated through lower triangle of the output matrix because it is symmetrical along the 
+        diagonal.
+  Full credit solutions will have a least two optimizations and describe
+  WHY these improved performance in at least a couple sentences.
+
+  ####################### YOUR ANSWER HERE #########################
+
+  ##################################################################
+
+
+PROBLEM 2: Timing Search Algorithms
+===================================
+
+  Do your timing study on csel-atlas.cselabs.umn.edu. In most cases,
+  report times larger than 1e-03 seconds as times shorter than this are
+  unreliable. Run searches for more repetitions to lengthen run times.
+
+
+(A) Min Size for Algorithmic Differences
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Determine the size of input array where one starts to see a measurable
+  difference in the performance of the linear and logarithmic
+  algorithms.  Produce a timing table which includes all algorithms
+  which clearly demonstrates an uptick in the times associated with some
+  while others remain much lower.  Identify what size this appears to be
+  a occur. SHOW A TIMING TABLE to support your conclusions and ensure
+  that the times reported are larger that 1e-03.
+
+  ####################### YOUR ANSWER HERE #########################
+
+  ##################################################################
+  trifu001@csel-atlas:~/Desktop/CSCI 2021/p4-code$ ./search_benchmark 5 10 600
+     LENGTH   SEARCHES      array       list     binary       tree
+         32         64 2.2970e-03 2.3720e-03 1.9230e-03 1.4890e-03
+
+         64        128 8.7930e-03 9.2860e-03 4.4030e-03 3.9870e-03
+
+        128        256 3.3020e-02 3.3185e-02 8.6890e-03 7.6860e-03
+
+        256        512 1.3263e-01 1.2893e-01 1.7395e-02 1.4742e-02
+
+        512       1024 5.1020e-01 6.0149e-01 3.5949e-02 3.0391e-02
+
+        You start to see a noticible difference when the size of the array gets to 128 in length. 
+        The logarithmic algorithms maintain a magnitude of 10^-3 bu the linear ones already slow 
+        down to a magnitude of 10^-2.
+
+    
+
+
+
+(B) Linear Search in List vs Array
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Determine whether the linear array and linked list search remain
+  approximately at the same performance level as size increases to large
+  data or whether one begins to become favorable over other. Determine
+  the approximate size at which this divergence becomes obvious. Discuss
+  reasons WHY this difference arises.  SHOW A TIMING TABLE to support
+  your conclusions and ensure that the times reported are larger that
+  1e-03.
+
+  ####################### YOUR ANSWER HERE #########################
+
+  ##################################################################
+  trifu001@csel-atlas:~/Desktop/CSCI 2021/p4-code$ ./search_benchmark 5 15 30 la ll
+     LENGTH   SEARCHES      array       list
+         32         64 1.3600e-04 1.3500e-04
+
+         64        128 4.9200e-04 5.2300e-04
+
+        128        256 1.9340e-03 2.0840e-03
+
+        256        512 7.8270e-03 7.6270e-03
+
+        512       1024 2.9721e-02 3.5206e-02
+
+       1024       2048 1.1035e-01 3.4648e-01
+
+       2048       4096 4.1148e-01 1.5883e+00
+
+       4096       8192 1.6518e+00 8.0727e+00
+
+       8192      16384 6.4176e+00 4.1409e+01
+
+      16384      32768 2.5753e+01 1.9125e+02
+
+      They generally stay the same but start to vary at length 2048. I think there is little 
+      performance difference between the two because they both work in the same way where they iterate linearly through
+      the structure, going from the beginning untill they find the element. Array is faster from the start.
+
+
+(C) Binary Search in Tree vs Array
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Compare the binary array search and binary tree search on small to
+  very large arrays. Determine if there is a size at which the
+  performance of these two begins to diverge. If so, describe why this
+  might be happening based on your understanding of the data structures
+  and the memory system. If not, describe why you believe there is
+  little performance difference between the two. SHOW A TIMING TABLE to
+  support your conclusions and ensure that the times reported are larger
+  that 1e-03.
+
+  ####################### YOUR ANSWER HERE #########################
+
+  ##################################################################
+  trifu001@csel-atlas:~/Desktop/CSCI 2021/p4-code$ ./search_benchmark 3 10 4000 bt bl
+     LENGTH   SEARCHES     binary       tree
+          8         16 1.4190e-03 1.1350e-03
+
+         16         32 5.2250e-03 3.3710e-03
+
+         32         64 1.5388e-02 1.1971e-02
+
+         64        128 3.4488e-02 3.0468e-02
+
+        128        256 6.9811e-02 6.0420e-02
+
+        256        512 1.3941e-01 1.2063e-01
+
+        512       1024 2.8309e-01 2.0411e-01
+
+  trifu001@csel-atlas:~/Desktop/CSCI 2021/p4-code$ ./search_benchmark 10 30 3 bt bl
+     LENGTH   SEARCHES     binary       tree
+       1024       2048 3.8100e-04 3.2100e-04
+
+       2048       4096 8.2900e-04 6.8200e-04
+
+       4096       8192 1.7580e-03 1.5820e-03
+
+       8192      16384 3.7690e-03 3.2140e-03
+
+      16384      32768 8.3410e-03 7.0000e-03
+
+      32768      65536 1.7999e-02 1.5029e-02
+
+      65536     131072 3.9270e-02 4.2957e-02
+
+     131072     262144 9.0715e-02 1.1302e-01
+
+     262144     524288 2.0547e-01 2.6064e-01
+
+     524288    1048576 4.6469e-01 5.7696e-01
+
+    1048576    2097152 1.0743e+00 1.2715e+00
+
+    2097152    4194304 2.4374e+00 2.8635e+00
+
+    4194304    8388608 5.6579e+00 5.8494e+00
+
+For smaller lengths the binary tree is faster from the start. For larger lengths however, the binary array gets faster at length 65536.
+  
+
+
+(D) Caching Effects on Algorithms
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  It is commonly believed that memory systems that feature a Cache will
+  lead to arrays performing faster than linked structures such as Linked
+  Lists and Binary Search Trees. Describe whether your timings confirm
+  or refute this belief.  Address both types of algorithms in your
+  answer:
+  - What effects does Cache have on Linear Search in arrays and lists
+    and why?
+  - What effects does Cache have on Binary Search in arrays and trees
+    and why?
+
+  ####################### YOUR ANSWER HERE #########################
+
+  ##################################################################
+  Arrays should be faster because they can utilize cache while trees using dynamically allocated memory so they can't work with cache. Cache for this reason helps
+  linear search in arrays and binary array search run faster than they would otherwise. Stack is faster because it can use cache so arrays are faster since they are stored in stack.
+  Trees on the other hand are stored in the heap so they don't get the same adantage with cache so that why for large data sizes binary arry search is faster.
+
+
+
+(E) OPTIONAL MAKEUP CREDIT
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  If you decided to make use of a table of function pointers/structs
+  which is worth makeup credit, describe your basic design for this
+  below.
+
+  ####################### YOUR ANSWER HERE #########################
+
+  ##################################################################
